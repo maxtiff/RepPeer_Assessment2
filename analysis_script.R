@@ -7,5 +7,7 @@ if(!file.exists(datasetDirPath)){
   download.file(url,datasetDirPath)
 }
 
-weather <- read.csv(bzfile(datasetDirPath))
-unlink(datasetDirPath)
+## Read in csv file and delete bz2 file.
+weather <- read.csv(bzfile(datasetDirPath), stringsAsFactors = FALSE)
+
+casualties <- aggregate(weather$casualties,by=list(weather$EVTYPE), sum)
