@@ -8,11 +8,9 @@ if(!file.exists(datasetDirPath)){
 }
 
 ## Read in csv file and delete bz2 file.
-weather <- read.csv(bzfile(datasetDirPath), stringsAsFactors = FALSE)
+weather <- read.csv(bzfile(datasetDirPath), na.strings = c("NA", ""), stringsAsFactors = FALSE)
 
 evtype <- unique(weather$EVTYPE)
-
-casualties <- aggregate(weather$casualties,by=list(evtype), sum)
 
 for (i in evtype) {
   agrep(i, weather$EVTYPE)
