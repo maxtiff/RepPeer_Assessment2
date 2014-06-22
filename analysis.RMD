@@ -1,0 +1,125 @@
+Health Consequences and Economic Costs of Major Weather Events in the United States from 1950 to 2011.
+========================================================
+
+The following R markdown document analyzes and presents on major weather events that have occurred in the United States from 1950-2011. Bar charts are used to determine which types of events have caused the most casualties, crop damage and property damage. Casualties refers to a combination of injuries and fatalities that resulted from a specific event. Crop damage and property damage are presented in nominal US dollars. Only the top ten catastrophic events are displayed.
+
+**Data Processing**
+
+Lattice library is sourced for graphics:
+```{r}
+## Source 'lattice' library
+library(lattice)
+```
+Data comes from online repository provided by Coursera instructors:
+```{r}
+
+## Set variables for download
+url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+datasetDirPath <- file.path("weather.csv.bz2")
+
+## Downloading/Unzipping data *iff* data doesn't already exist
+if(!file.exists(datasetDirPath)){ 
+  download.file(url,datasetDirPath)
+}
+
+```
+
+Weather data is read in as a CSV file first, where blanks cells are changed to 'NA'. A second, smaller data frame is created to work with. Column titles are also clarified.
+```{r}
+
+## Read in csv file
+weather <- read.csv(bzfile(datasetDirPath), na.strings = c("NA", ""), stringsAsFactors = FALSE)
+
+## Remove excess columns
+weather <- data.frame(Event = weather$EVTYPE, Fatalities = weather$FATALITIES, Injuries = weather$INJURIES, PropertyDamage = weather$PROPDMG, propdmgexp = weather$PROPDMGEXP, CropDamage = weather$CROPDMG, cropdmgexp = weather$CROPDMGEXP, Remarks = weather$REMARKS)
+```
+
+For the analysis, any extraneous punctuation, or spaces and leading and trailing spaces are removed from the 'Event' field. 
+```{r}
+## Clean Event field
+weather$Event <- gsub("[[:digit:][:punct:]])"," ", weather$Event)
+weather$Event <- gsub("[[:space:]]+)"," ", weather$Event)
+weather$Event <- gsub("^[[:space:]]+|[[:space:]]+$ )"," ", weather$Event)
+```
+
+Since the top ten events will be used, any duplicate or similarly labeled events that will appear in the top ten and change the resulting order will be combined.
+```{r}
+## Clean-up duplicates that will be in top ten.
+weather$Event[grep("TSTM WIND|THUNDERSTORM WIND", weather$Event)] <- "TSTM WIND"
+weather$Event[grep("WINTER STORM", weather$Event)] <- "BLIZZARD"
+```
+
+For the purposes of analyzing the health consequences, injuries and fatalities are combined into a more general 'casualties' column.
+
+```{r}
+## Calculate casualties from injury and fatality statistics
+weather$Casualties <- weather$Injuries + weather$Fatalities
+```
+
+Next, the quantity of casualties by event type is determined, and ordered from most casualties to least. Rows without casualty data are dropped. Finally, the top ten events are subset.
+```{r}
+## Aggregate casualties by storm type
+eventCasualties <- aggregate(Casualties ~ Event, weather, sum)
+eventCasualties <- eventCasualties[eventCasualties$Casualties > 0,]
+eventCasualties <- eventCasualties[with(eventCasualties, order(-Casualties, Event)), ]
+
+## Pull Top Ten Events by Casualty
+topEventsHealth <- head(eventCasualties, 10)
+```
+
+The economic consequences are divided into two categories: crop and property damage.
+
+First, the monetary figures are converted to the same scale for the analysis
+```{r}
+## Create vector of amounts for multiplication
+translate <- c(h = 100, k = 1000, m = 1e+06, b = 1e+09)
+## Convert property damage to scale
+weather$propdmgexp <- translate[tolower(weather$propdmgexp)]
+weather$propdmgexp[is.na(weather$propdmgexp)] = 1
+
+## Calculate dollar amount for property damage
+weather$PropertyDamage <- weather$PropertyDamage * weather$propdmgexp
+
+## Rinse and repeat for crop damage.
+weather$cropdmgexp <- translate[tolower(weather$cropdmgexp)]
+weather$cropdmgexp[is.na(weather$cropdmgexp)] = 1
+
+weather$CropDamage <- weather$CropDamage * weather$cropdmgexp
+```
+Next, the crop and property damage are aggregated by event type.
+```{r}
+## Aggregate property and crop damage
+eventPropDmg <- aggregate(PropertyDamage ~ Event, weather, sum)
+eventPropDmg <- eventPropDmg[eventPropDmg$PropertyDamage > 0,]
+eventPropDmg <- eventPropDmg[with(eventPropDmg, order(-PropertyDamage, Event)), ]
+
+eventCropDmg <- aggregate(CropDamage ~ Event, weather, sum)
+eventCropDmg <- eventCropDmg[eventCropDmg$CropDamage > 0,]
+eventCropDmg <- eventCropDmg[with(eventCropDmg, order(-CropDamage, Event)), ]
+```
+
+Just as was done for casulaties, the top ten events by damage are taken.
+```{r}
+## Find top ten events for crop and property damage
+topEventsProp <- head(eventPropDmg, 10)
+topEventsCrop <- head(eventCropDmg, 10)
+```
+
+**Results**
+The top ten events by casualty are presented below. Tornadic events are responsible for the most casualties.
+```{r fig.width=7, fig.height=6}
+
+## Graph
+barchart(Casualties ~ Event, topEventsHealth, xlab="Event", ylab="Casualties")
+```
+
+The top ten events that cause the most crop damage are presented below. Droughts are a significant economic burden on crop production.
+```{r fig.width=7, fig.height=6}
+barchart(CropDamage ~ Event, topEventsCrop, xlab="Event", ylab="Crop Damage (US Dollars)")
+```
+
+The top ten events that cause the most property damage are presented below. Floods result in the most monetary damage to property.
+```{r fig.width=7, fig.height=6}
+barchart(PropertyDamage ~ Event, topEventsProp, xlab="Event", ylab="Property Damage (US Dollars)")
+```
+

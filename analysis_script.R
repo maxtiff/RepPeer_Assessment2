@@ -39,10 +39,9 @@ eventCasualties <- eventCasualties[with(eventCasualties, order(-Casualties, Even
 topEventsHealth <- head(eventCasualties, 10)
 
 ## Graph
-barchart(Event, topEventsHealth,xlab=Event,ylab=Casualties)
+barchart(Casualties ~ Event, topEventsHealth, xlab="Event", ylab="Casualties")
 
-# Here we convert PROPDMGEXP and CROPDMGEXP to values and add them to the
-# respective CROPDMG/PROPDMG
+## Convert damage values to full nominal dollars.
 translate <- c(h = 100, k = 1000, m = 1e+06, b = 1e+09)
 weather$propdmgexp <- translate[tolower(weather$propdmgexp)]
 weather$propdmgexp[is.na(weather$propdmgexp)] = 1
@@ -55,8 +54,20 @@ weather$cropdmgexp[is.na(weather$cropdmgexp)] = 1
 weather$CropDamage <- weather$CropDamage * weather$cropdmgexp
 
 ## Aggregate property and crop damage
-eventPropDmg <- aggregate(PropertyDamage ~ Event, weather, sum) 
+eventPropDmg <- aggregate(PropertyDamage ~ Event, weather, sum)
+eventPropDmg <- eventPropDmg[eventPropDmg$PropertyDamage > 0,]
+eventPropDmg <- eventPropDmg[with(eventPropDmg, order(-PropertyDamage, Event)), ]
+
 eventCropDmg <- aggregate(CropDamage ~ Event, weather, sum)
+eventCropDmg <- eventCropDmg[eventCropDmg$CropDamage > 0,]
+eventCropDmg <- eventCropDmg[with(eventCropDmg, order(-CropDamage, Event)), ]
+
+## Find top ten events for crop and property damage
+topEventsProp <- head(eventPropDmg, 10)
+topEventsCrop <- head(eventCropDmg, 10)
 
 
+## Graph economic consequences
+barchart(PropertyDamage ~ Event, topEventsProp, xlab="Event", ylab="Property Damage (US Dollars)")
+barchart(CropDamage ~ Event, topEventsCrop, xlab="Event", ylab="Crop Damage (US Dollars)")
 
