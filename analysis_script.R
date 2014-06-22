@@ -1,4 +1,4 @@
-url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 
 datasetDirPath <- file.path("weather.csv.bz2")
 
@@ -10,16 +10,18 @@ if(!file.exists(datasetDirPath)){
 ## Read in csv file and delete bz2 file.
 weather <- read.csv(bzfile(datasetDirPath), na.strings = c("NA", ""), stringsAsFactors = FALSE)
 
-## Clean EVTYPE field
-weather$EVTYPE <- sapply(weather$EVTYPE, toupper)
-weather$EVTYPE <- gsub("[[:digit:][:punct:]])"," ", weather$EVTYPE)
-weather$EVTYPE <- gsub("[[:space:]]+)"," ", weather$EVTYPE)
-weather$EVTYPE <- gsub("^[[:space:]]+|[[:space:]]+$ )"," ", weather$EVTYPE)
+## Remove excess columns
+weather <- data.frame(Event = weather$EVTYPE, Fatalities = weather$FATALITIES, 
+                 Injuries = weather$INJURIES, PropertyDamage = weather$PROPDMG, propdmgexp = weather$PROPDMGEXP, 
+                 CropDamage = weather$CROPDMG, cropdmgexp = weather$CROPDMGEXP, Remarks = weather$REMARKS)
 
-## 
+## Clean Event field
+weather$Event <- sapply(weather$Event, toupper)
+weather$Event <- gsub("[[:digit:][:punct:]])"," ", weather$Event)
+weather$Event <- gsub("[[:space:]]+)"," ", weather$Event)
+weather$Event <- gsub("^[[:space:]]+|[[:space:]]+$ )"," ", weather$Event)
 
-evtype <- unique(weather$EVTYPE)
+## Calculate casualties from injury and fatality statistics
+weather$Casualties <- weather$Injuries + weather$Fatalities
 
-for (i in evtype) {
-  agrep(i, weather$EVTYPE)
-}
+
