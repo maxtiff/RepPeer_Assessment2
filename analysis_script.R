@@ -21,7 +21,19 @@ weather$Event <- gsub("[[:digit:][:punct:]])"," ", weather$Event)
 weather$Event <- gsub("[[:space:]]+)"," ", weather$Event)
 weather$Event <- gsub("^[[:space:]]+|[[:space:]]+$ )"," ", weather$Event)
 
+## Clean-up top duplicates
+weather$Event[grep("TSTM WIND|THUNDERSTORM WIND", weather$Event)] <- "TSTM WIND"
+weather$Event[grep("WINTER STORM", weather$Event)] <- "BLIZZARD"
+
 ## Calculate casualties from injury and fatality statistics
 weather$Casualties <- weather$Injuries + weather$Fatalities
+
+## Aggregate casualties by storm type
+eventCasualties <- aggregate(Casualties ~ Event, weather, sum)
+eventCasualties <- eventCasualties[eventCasualties$Casualties > 0,]
+eventCasualties <- eventCasualties[with(eventCasualties, order(-Casualties, Event)), ]
+
+topEventsHealth <- head(eventCasualties, 10)
+
 
 
