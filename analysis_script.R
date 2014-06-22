@@ -21,7 +21,7 @@ weather$Event <- gsub("[[:digit:][:punct:]])"," ", weather$Event)
 weather$Event <- gsub("[[:space:]]+)"," ", weather$Event)
 weather$Event <- gsub("^[[:space:]]+|[[:space:]]+$ )"," ", weather$Event)
 
-## Clean-up top duplicates
+## Clean-up duplicates that will be in top ten.
 weather$Event[grep("TSTM WIND|THUNDERSTORM WIND", weather$Event)] <- "TSTM WIND"
 weather$Event[grep("WINTER STORM", weather$Event)] <- "BLIZZARD"
 
@@ -33,7 +33,27 @@ eventCasualties <- aggregate(Casualties ~ Event, weather, sum)
 eventCasualties <- eventCasualties[eventCasualties$Casualties > 0,]
 eventCasualties <- eventCasualties[with(eventCasualties, order(-Casualties, Event)), ]
 
+## Pull Top Ten Events by Casualty
 topEventsHealth <- head(eventCasualties, 10)
+
+## Graph
+
+# Here we convert PROPDMGEXP and CROPDMGEXP to values and add them to the
+# respective CROPDMG/PROPDMG
+translate <- c(h = 100, k = 1000, m = 1e+06, b = 1e+09)
+weather$propdmgexp <- translate[tolower(weather$propdmgexp)]
+weather$propdmgexp[is.na(weather$propdmgexp)] = 1
+
+weather$PropertyDamage <- weather$PropertyDamage * weather$propdmgexp
+
+weather$cropdmgexp <- translate[tolower(weather$cropdmgexp)]
+weather$cropdmgexp[is.na(weather$cropdmgexp)] = 1
+
+weather$CropDamage <- weather$CropDamage * weather$cropdmgexp
+
+## Aggregate property and crop damage
+eventPropDmg <- aggregate(PropertyDamage ~ Event, weather, sum) 
+eventCropDmg <- aggregate(CropDamage ~ Event, weather, sum)
 
 
 
