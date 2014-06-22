@@ -1,5 +1,8 @@
-url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+## Source 'lattice' library
+library(lattice)
 
+## Set variables for download
+url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
 datasetDirPath <- file.path("weather.csv.bz2")
 
 ## Downloading/Unzipping data *iff* data doesn't already exist
@@ -16,7 +19,6 @@ weather <- data.frame(Event = weather$EVTYPE, Fatalities = weather$FATALITIES,
                  CropDamage = weather$CROPDMG, cropdmgexp = weather$CROPDMGEXP, Remarks = weather$REMARKS)
 
 ## Clean Event field
-weather$Event <- sapply(weather$Event, toupper)
 weather$Event <- gsub("[[:digit:][:punct:]])"," ", weather$Event)
 weather$Event <- gsub("[[:space:]]+)"," ", weather$Event)
 weather$Event <- gsub("^[[:space:]]+|[[:space:]]+$ )"," ", weather$Event)
@@ -37,6 +39,7 @@ eventCasualties <- eventCasualties[with(eventCasualties, order(-Casualties, Even
 topEventsHealth <- head(eventCasualties, 10)
 
 ## Graph
+barchart(Event, topEventsHealth,xlab=Event,ylab=Casualties)
 
 # Here we convert PROPDMGEXP and CROPDMGEXP to values and add them to the
 # respective CROPDMG/PROPDMG
